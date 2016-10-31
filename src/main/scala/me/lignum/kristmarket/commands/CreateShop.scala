@@ -2,6 +2,7 @@ package me.lignum.kristmarket.commands
 
 import me.lignum.kristmarket.{KristMarket, Position, ShopType, SignShop}
 import org.spongepowered.api.block.BlockTypes
+import org.spongepowered.api.block.tileentity.{Sign, TileEntityTypes}
 import org.spongepowered.api.command.args.CommandContext
 import org.spongepowered.api.command.args.GenericArguments._
 import org.spongepowered.api.command.spec.{CommandExecutor, CommandSpec}
@@ -67,28 +68,56 @@ class CreateShop extends CommandExecutor {
           val block = player.getWorld.getBlock(hit.getBlockPosition)
 
           if (block.getType == BlockTypes.WALL_SIGN || block.getType == BlockTypes.STANDING_SIGN) {
-            val shop = new SignShop(location, itemStack, initialBase, initialDemand, halveningConstant, shopType)
-            KristMarket.get.database.addSignShop(shop) match {
-              case Some(s) =>
-                val action = if (s.shopType == ShopType.BUY) "buying" else "selling"
-                val itemName = s.item.getItem.getName
+            val tentOpt = player.getWorld.getTileEntity(hit.getBlockPosition)
 
-                src.sendMessage(
-                  Text.builder(
-                    "There's already a sign shop " + action + " " + itemName + " here!"
-                  )
-                  .color(TextColors.RED)
-                  .build()
+            if (tentOpt.isPresent) {
+              val tent = tentOpt.get
+
+              if (tent.getType == TileEntityTypes.SIGN) {
+                val sign = tent.asInstanceOf[Sign]
+
+                val shop = new SignShop(
+                  player.getWorld, location, itemStack,
+                  initialBase, initialDemand, halveningConstant, shopType
                 )
 
-              case None =>
-                KristMarket.get.database.save()
+                shop.setSignText(sign)
 
+                KristMarket.get.database.addSignShop(shop) match {
+                  case Some(s) =>
+                    val action = if (s.shopType == ShopType.BUY) "selling" else "buying"
+                    val itemName = s.item.getItem.getName
+
+                    src.sendMessage(
+                      Text.builder(
+                        "There's already a sign shop " + action + " " + itemName + " here!"
+                      )
+                      .color(TextColors.RED)
+                      .build()
+                    )
+
+                  case None =>
+                    KristMarket.get.database.save()
+
+                    src.sendMessage(
+                      Text.builder("Successfully created your sign shop!")
+                        .color(TextColors.GREEN)
+                        .build()
+                    )
+                }
+              } else {
                 src.sendMessage(
-                  Text.builder("Successfully created your sign shop!")
-                    .color(TextColors.GREEN)
+                  Text.builder("This sign has no sign tile entity!")
+                    .color(TextColors.RED)
                     .build()
                 )
+              }
+            } else {
+              src.sendMessage(
+                Text.builder("This sign has no tile entity!")
+                  .color(TextColors.RED)
+                  .build()
+              )
             }
           } else {
             src.sendMessage(

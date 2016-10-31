@@ -1,11 +1,16 @@
 package me.lignum.kristmarket
 
-import java.util.Calendar
+import java.util
+import java.util.{Calendar, Locale}
 
 import ninja.leaping.configurate.ConfigurationNode
 import org.spongepowered.api.Sponge
+import org.spongepowered.api.block.tileentity.Sign
 import org.spongepowered.api.data.translator.ConfigurateTranslator
 import org.spongepowered.api.item.inventory.ItemStack
+import org.spongepowered.api.text.Text
+import org.spongepowered.api.text.format.TextColors
+import org.spongepowered.api.world.World
 
 object SignShop {
   def apply(node: ConfigurationNode): Option[SignShop] = {
@@ -27,32 +32,59 @@ object SignShop {
     val translator = ConfigurateTranslator.instance()
     val itemData = translator.translateFrom(node.getNode("itemStack"))
 
-    val builder = Sponge.getDataManager.getBuilder(classOf[ItemStack])
+    val worldOpt = Sponge.getServer.getWorld(node.getNode("world").getString(""))
 
-    if (builder.isPresent) {
-      val item = builder.get.build(itemData)
+    if (worldOpt.isPresent) {
+      val world = worldOpt.get
+      val builder = Sponge.getDataManager.getBuilder(classOf[ItemStack])
 
-      if (item.isPresent) {
-        Some(new SignShop(location, item.get, initialBase, demand, halveningConstant, shopType))
-      } else {
-        None
+      if (builder.isPresent) {
+        val item = builder.get.build(itemData)
+
+        if (item.isPresent) {
+          return Some(new SignShop(world, location, item.get, initialBase, demand, halveningConstant, shopType))
+        }
       }
-    } else {
-      None
     }
+
+    None
   }
 }
 
 class SignShop(
+  val world: World,
   val location: Position, val item: ItemStack, val initialBase: Int,
-  val demand: Int, val halveningConstant: Int, val shopType: ShopType) {
+  val demand: Int, val halveningConstant: Int, val shopType: ShopType
+) {
+  var price = 0
 
-  def calculatePrice = {
+  updatePrice()
+
+  def setSignText(sign: Sign): Unit = {
+    val heading = "[" + (shopType match {
+      case ShopType.BUY => "Buy"
+      case ShopType.SELL => "Sell"
+      case _ => "Fuck idk"
+    }) + "]"
+
+    val itemName = item.getTranslation.get(Locale.UK)
+
+
+    val lines = new util.ArrayList[Text]()
+    lines.add(Text.builder(heading).color(TextColors.BLUE).build())
+    lines.add(Text.of(item.getQuantity + "x"))
+    lines.add(Text.builder(itemName).color(TextColors.DARK_GREEN).build())
+    lines.add(Text.of("for " + price + " KST"))
+    sign.getSignData.setElements(lines)
+  }
+
+  def updatePrice() = {
     val calendar = Calendar.getInstance()
     val minutes = calendar.get(Calendar.MINUTE)
     val time = minutes / 60.0
 
-    Math.floor((initialBase + 10 * Math.sin(2.0 * Math.PI * time)) * Math.pow(2.0, demand / halveningConstant.toDouble)).toInt
+    price =
+      Math.floor((initialBase + 10 * Math.sin(2.0 * Math.PI * time)) * Math.pow(2.0, demand / halveningConstant.toDouble)).toInt
   }
 
   def writeToConfigNode(node: ConfigurationNode) = {
@@ -62,6 +94,8 @@ class SignShop(
 
     val translator = ConfigurateTranslator.instance()
     node.getNode("itemStack").setValue(translator.translateData(item.toContainer))
+
+    node.getNode("world").setValue(world.getUniqueId.toString)
 
     node.getNode("halveningConstant").setValue(halveningConstant)
     node.getNode("shopType").setValue(shopType.toString)

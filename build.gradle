@@ -23,7 +23,6 @@ configurations {
 dependencies {
     provided 'org.spongepowered:spongeapi:4.2.0-20161003.175747-12'
     compile 'org.scala-lang:scala-library:2.12.0-M5'
-    compile 'org.json:json:20160810'
 }
 
 task fatJar(type: Jar) {
