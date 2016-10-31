@@ -81,8 +81,6 @@ class CreateShop extends CommandExecutor {
                   initialBase, initialDemand, halveningConstant, shopType
                 )
 
-                shop.setSignText(sign)
-
                 KristMarket.get.database.addSignShop(shop) match {
                   case Some(s) =>
                     val action = if (s.shopType == ShopType.BUY) "selling" else "buying"
@@ -97,6 +95,7 @@ class CreateShop extends CommandExecutor {
                     )
 
                   case None =>
+                    shop.setSignText(sign)
                     KristMarket.get.database.save()
 
                     src.sendMessage(

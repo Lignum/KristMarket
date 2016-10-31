@@ -1,11 +1,11 @@
 package me.lignum.kristmarket
 
-import java.util
 import java.util.{Calendar, Locale}
 
 import ninja.leaping.configurate.ConfigurationNode
 import org.spongepowered.api.Sponge
 import org.spongepowered.api.block.tileentity.Sign
+import org.spongepowered.api.data.manipulator.mutable.tileentity.SignData
 import org.spongepowered.api.data.translator.ConfigurateTranslator
 import org.spongepowered.api.item.inventory.ItemStack
 import org.spongepowered.api.text.Text
@@ -69,13 +69,18 @@ class SignShop(
 
     val itemName = item.getTranslation.get(Locale.UK)
 
+    val signDataOpt = sign.getOrCreate(classOf[SignData])
 
-    val lines = new util.ArrayList[Text]()
-    lines.add(Text.builder(heading).color(TextColors.BLUE).build())
-    lines.add(Text.of(item.getQuantity + "x"))
-    lines.add(Text.builder(itemName).color(TextColors.DARK_GREEN).build())
-    lines.add(Text.of("for " + price + " KST"))
-    sign.getSignData.setElements(lines)
+    if (signDataOpt.isPresent) {
+      val sd = signDataOpt.get()
+
+      sd.setElement(0, Text.builder(heading).color(TextColors.BLUE).build())
+      sd.setElement(1, Text.of(item.getQuantity + "x"))
+      sd.setElement(2, Text.builder(itemName).color(TextColors.DARK_GREEN).build())
+      sd.setElement(3, Text.of("for " + price + " KST"))
+
+      sign.offer(sd)
+    }
   }
 
   def updatePrice() = {
