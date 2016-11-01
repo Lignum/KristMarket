@@ -77,7 +77,7 @@ public class SignShop {
 		if (!priceOpt.isPresent()) {
 			return -1;
 		} else {
-			int price = priceOpt.get();
+			int price = priceOpt.get() * item.getCount();
 
 			if (isBuyShop) {
 				return Math.max(1, price);

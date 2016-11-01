@@ -5,7 +5,7 @@ import java.nio.file.Path
 import java.util.concurrent.TimeUnit
 
 import com.google.inject.Inject
-import me.lignum.kristmarket.commands.{CreateShop, SetShopItem}
+import me.lignum.kristmarket.commands.{CreateShop, SetShopItem, UpdateShopItem}
 import me.lignum.kristmarket.events.BlockListener
 import org.slf4j.Logger
 import org.spongepowered.api.Sponge
@@ -104,6 +104,7 @@ class KristMarket {
 
     Sponge.getCommandManager.register(this, CreateShop.spec, "createshop")
     Sponge.getCommandManager.register(this, SetShopItem.spec, "setshopitem")
+    Sponge.getCommandManager.register(this, UpdateShopItem.spec, "updateshopitem")
 
     Sponge.getEventManager.registerListeners(this, new BlockListener)
     startPriceUpdateSchedule()
