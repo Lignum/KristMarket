@@ -13,7 +13,7 @@ import org.spongepowered.api.block.BlockTypes
 import org.spongepowered.api.block.tileentity.{Sign, TileEntityTypes}
 import org.spongepowered.api.config.ConfigDir
 import org.spongepowered.api.event.Listener
-import org.spongepowered.api.event.game.state.{GameInitializationEvent, GameStartedServerEvent}
+import org.spongepowered.api.event.game.state.GameStartedServerEvent
 import org.spongepowered.api.plugin.Plugin
 
 import scala.collection.mutable.ArrayBuffer
@@ -47,7 +47,7 @@ class KristMarket {
         database.signShops.foreach(shop => {
           shop.updatePrice()
 
-          val tentOpt = shop.world.getTileEntity(shop.location.x, shop.location.y, shop.location.z)
+          val tentOpt = shop.location.getTileEntity
 
           if (tentOpt.isPresent) {
             val tent = tentOpt.get
@@ -81,7 +81,7 @@ class KristMarket {
   }
 
   @Listener
-  def onInit(event: GameInitializationEvent): Unit = {
+  def onServerStart(event: GameStartedServerEvent): Unit = {
     configFile = configDir.resolve("kristmarket.conf").toFile
     config = new Configuration(configFile)
 
@@ -91,10 +91,6 @@ class KristMarket {
     Sponge.getCommandManager.register(this, CreateShop.spec, "createshop")
 
     Sponge.getEventManager.registerListeners(this, new BlockListener)
-  }
-
-  @Listener
-  def onServerStart(event: GameStartedServerEvent): Unit = {
     startPriceUpdateSchedule()
   }
 }

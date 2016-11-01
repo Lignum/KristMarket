@@ -14,9 +14,18 @@ class BlockListener {
         val l = loc.get
 
         val db = KristMarket.get.database
+        var dbChanged = false
+
         db.signShops
-          .filter(_.location.compare(l.getBlockX, l.getBlockY, l.getBlockZ))
-          .foreach(x => db.signShops -= x)
+          .filter(_.location.equals(l))
+          .foreach(x => {
+            db.signShops -= x
+            dbChanged = true
+          })
+
+        if (dbChanged) {
+          db.save()
+        }
       }
     })
   }

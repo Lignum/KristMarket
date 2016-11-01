@@ -1,6 +1,6 @@
 package me.lignum.kristmarket.commands
 
-import me.lignum.kristmarket.{KristMarket, Position, ShopType, SignShop}
+import me.lignum.kristmarket.{KristMarket, ShopType, SignShop}
 import org.spongepowered.api.block.BlockTypes
 import org.spongepowered.api.block.tileentity.{Sign, TileEntityTypes}
 import org.spongepowered.api.command.args.CommandContext
@@ -63,7 +63,7 @@ class CreateShop extends CommandExecutor {
 
         if (hitOpt.isPresent) {
           val hit = hitOpt.get
-          val location = new Position(hit.getBlockX, hit.getBlockY, hit.getBlockZ)
+          val location = hit.getLocation
 
           val block = player.getWorld.getBlock(hit.getBlockPosition)
 
@@ -77,14 +77,15 @@ class CreateShop extends CommandExecutor {
                 val sign = tent.asInstanceOf[Sign]
 
                 val shop = new SignShop(
-                  player.getWorld, location, itemStack,
-                  initialBase, initialDemand, halveningConstant, shopType
+                  location, itemStack.createSnapshot,
+                  initialBase, initialDemand, halveningConstant,
+                  shopType == ShopType.BUY
                 )
 
                 KristMarket.get.database.addSignShop(shop) match {
                   case Some(s) =>
-                    val action = if (s.shopType == ShopType.BUY) "selling" else "buying"
-                    val itemName = s.item.getItem.getName
+                    val action = if (s.isBuyShop) "selling" else "buying"
+                    val itemName = s.item.getType.getName
 
                     src.sendMessage(
                       Text.builder(

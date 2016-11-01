@@ -24,12 +24,12 @@ class Configuration(configFile: File) {
     if (rootNode.getNode("updateInterval").isVirtual) {
       // The interval at which prices will be updated in seconds.
       rootNode.getNode("updateInterval").setValue(10)
-    }
 
-    if (loader.canSave) {
-      loader.save(rootNode)
-    } else {
-      KristMarket.get.logger.error("Can't save config file!")
+      if (loader.canSave) {
+        loader.save(rootNode)
+      } else {
+        KristMarket.get.logger.error("Can't save config file!")
+      }
     }
 
     updateInterval = rootNode.getNode("updateInterval").getInt(10)
