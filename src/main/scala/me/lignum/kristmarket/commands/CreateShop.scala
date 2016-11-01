@@ -18,9 +18,6 @@ object CreateShop {
     .description(Text.of("Creates a sign shop."))
     .permission("kristmarket.command.createshop")
     .arguments(
-      onlyOne(integer(Text.of("initialBase"))),
-      onlyOne(integer(Text.of("initialDemand"))),
-      onlyOne(integer(Text.of("halveningConstant"))),
       onlyOne(enumValue(Text.of("shopType"), classOf[ShopType]))
     )
     .executor(new CreateShop)
@@ -30,13 +27,9 @@ object CreateShop {
 class CreateShop extends CommandExecutor {
   override def execute(src: CommandSource, args: CommandContext): CommandResult = src match {
     case player: Player =>
-      val initialBaseOpt = args.getOne[Int]("initialBase")
-      val initialDemandOpt = args.getOne[Int]("initialDemand")
-      val halveningConstantOpt = args.getOne[Int]("halveningConstant")
       val shopTypeOpt = args.getOne[ShopType]("shopType")
 
-      if (!initialBaseOpt.isPresent || !initialDemandOpt.isPresent ||
-        !halveningConstantOpt.isPresent || !shopTypeOpt.isPresent) {
+      if (!shopTypeOpt.isPresent) {
         src.sendMessage(
           Text.builder("Invalid arguments!")
             .color(TextColors.RED)
@@ -46,15 +39,20 @@ class CreateShop extends CommandExecutor {
         return CommandResult.success()
       }
 
-      val initialBase = initialBaseOpt.get
-      val initialDemand = initialDemandOpt.get
-      val halveningConstant = halveningConstantOpt.get
       val shopType = shopTypeOpt.get
 
       val itemStackOpt = player.getItemInHand
 
       if (itemStackOpt.isPresent) {
         val itemStack = itemStackOpt.get
+
+        KristMarket.get.database.getShopItem(itemStack.getItem) match {
+          case Some(is) =>
+          case None =>
+            src.sendMessage(Text.of(TextColors.RED, "Please register this item with /setshopitem!"))
+            return CommandResult.success()
+        }
+
         val ray: BlockRay[World] = BlockRay.from(player)
           .filter(BlockRay.continueAfterFilter[World](BlockRay.onlyAirFilter(), 1))
           .build()
@@ -76,11 +74,7 @@ class CreateShop extends CommandExecutor {
               if (tent.getType == TileEntityTypes.SIGN) {
                 val sign = tent.asInstanceOf[Sign]
 
-                val shop = new SignShop(
-                  location, itemStack.createSnapshot,
-                  initialBase, initialDemand, halveningConstant,
-                  shopType == ShopType.BUY
-                )
+                val shop = new SignShop(location, itemStack.createSnapshot, shopType == ShopType.BUY)
 
                 KristMarket.get.database.addSignShop(shop) match {
                   case Some(s) =>

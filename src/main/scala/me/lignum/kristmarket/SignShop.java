@@ -5,7 +5,6 @@ import ninja.leaping.configurate.objectmapping.serialize.ConfigSerializable;
 
 import org.spongepowered.api.block.tileentity.Sign;
 import org.spongepowered.api.data.manipulator.mutable.tileentity.SignData;
-import org.spongepowered.api.entity.living.Human;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.event.cause.Cause;
 import org.spongepowered.api.event.cause.NamedCause;
@@ -26,7 +25,6 @@ import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 
 import java.math.BigDecimal;
-import java.util.Calendar;
 import java.util.Locale;
 import java.util.Optional;
 
@@ -40,7 +38,8 @@ public class SignShop {
 		NO_INVENTORY_SPACE(Text.of(TextColors.RED, "Your inventory is full!")),
 		NO_ITEM_IN_HAND(Text.of(TextColors.RED, "You're not holding an item in your hand!")),
 		NOT_ENOUGH_ITEMS(Text.of(TextColors.RED, "You're not holding enough of the required item!")),
-		WRONG_ITEM(Text.of(TextColors.RED, "You're holding the wrong item!"));
+		WRONG_ITEM(Text.of(TextColors.RED, "You're holding the wrong item!")),
+		ITEM_HAS_NO_PRICE(Text.of(TextColors.RED, "Item has no price!! Report this to an admin."));
 
 		private final Text message;
 
@@ -60,30 +59,32 @@ public class SignShop {
 	public ItemStackSnapshot item;
 
 	@Setting
-	public int initialBase;
-
-	@Setting
-	public int demand;
-
-	@Setting
-	public int halveningConstant;
-
-	@Setting
 	public boolean isBuyShop;
-
-	public int price;
 
 	public SignShop() {
 
 	}
 
-	public SignShop(Location<World> location, ItemStackSnapshot item, int initialBase, int demand, int halveningConstant, boolean isBuyShop) {
+	public SignShop(Location<World> location, ItemStackSnapshot item, boolean isBuyShop) {
 		this.location = location;
 		this.item = item;
-		this.initialBase = initialBase;
-		this.demand = demand;
-		this.halveningConstant = halveningConstant;
 		this.isBuyShop = isBuyShop;
+	}
+
+	public int getPrice() {
+		Optional<Integer> priceOpt = getDatabase().getItemPrice(item.getType());
+
+		if (!priceOpt.isPresent()) {
+			return -1;
+		} else {
+			int price = priceOpt.get();
+
+			if (isBuyShop) {
+				return Math.max(1, price);
+			} else {
+				return Math.max(0, price / 2);
+			}
+		}
 	}
 
 	public void setSignText(Sign sign) {
@@ -96,34 +97,27 @@ public class SignShop {
 			sd.setElement(0, Text.builder(heading).color(TextColors.BLUE).build());
 			sd.setElement(1, Text.of(item.getCount() + "x"));
 			sd.setElement(2, Text.builder(itemName).color(TextColors.DARK_GREEN).build());
-			sd.setElement(3, Text.of("for " + price + " KST"));
+			sd.setElement(3, Text.of("for " + getPrice() + " KST"));
 
 			sign.offer(sd);
 		});
-	}
-
-	public void updatePrice() {
-		Calendar calendar = Calendar.getInstance();
-		int minutes = calendar.get(Calendar.MINUTE);
-		double time = minutes / 60.0;
-
-		int newPrice = (int)Math.floor(
-			(initialBase + 10.0 * Math.sin(2.0 * Math.PI * time)) *
-			Math.pow(2.0, demand / (double)halveningConstant)
-		);
-
-		price = Math.max(isBuyShop ? 1 : 0, newPrice);
 	}
 
 	private static EconomyService getEconomy() {
 		return KristMarket$.MODULE$.get().economy();
 	}
 
-	private static void saveDatabase() {
-		KristMarket$.MODULE$.get().database().save();
+	private static Database getDatabase() {
+		return KristMarket$.MODULE$.get().database();
 	}
 
 	public ActionResult buy(Player player) {
+		int price = getPrice();
+
+		if (price < 0) {
+			return ActionResult.ITEM_HAS_NO_PRICE;
+		}
+
 		EconomyService economy = getEconomy();
 		Optional<UniqueAccount> accountOpt = economy.getOrCreateAccount(player.getUniqueId());
 
@@ -161,13 +155,20 @@ public class SignShop {
 			return ActionResult.NO_INVENTORY_SPACE;
 		}
 
-		demand++;
+		Optional<? extends ShopItem> shopItem = getDatabase().getShopItemOpt(item.getType());
+		shopItem.ifPresent(it -> it.demand_$eq(it.demand() + item.getCount()));
 
-		saveDatabase();
+		getDatabase().save();
 		return ActionResult.SUCCESS;
 	}
 
 	public ActionResult sell(Player player) {
+		int price = getPrice();
+
+		if (price < 0) {
+			return ActionResult.ITEM_HAS_NO_PRICE;
+		}
+
 		Optional<ItemStack> itemOpt = player.getItemInHand();
 
 		if (!itemOpt.isPresent()) {
@@ -193,7 +194,7 @@ public class SignShop {
 
 		Account account = accountOpt.get();
 		TransactionResult result = account.deposit(
-			economy.getDefaultCurrency(), BigDecimal.valueOf(price), Cause.of(NamedCause.source(player))
+			economy.getDefaultCurrency(), BigDecimal.valueOf(getPrice()), Cause.of(NamedCause.source(player))
 		);
 
 		ResultType resultType = result.getResult();
@@ -206,8 +207,10 @@ public class SignShop {
 		stack.setQuantity(newQuantity);
 		player.setItemInHand(stack.getQuantity() <= 0 ? null : stack);
 
-		demand--;
-		saveDatabase();
+		Optional<? extends ShopItem> shopItem = getDatabase().getShopItemOpt(item.getType());
+		shopItem.ifPresent(it -> it.demand_$eq(it.demand() - item.getCount()));
+
+		getDatabase().save();
 		return ActionResult.SUCCESS;
 	}
 }

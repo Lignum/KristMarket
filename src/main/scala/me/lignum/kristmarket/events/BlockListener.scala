@@ -71,7 +71,7 @@ class BlockListener {
                 player.sendMessage(
                   Text.of(
                     TextColors.GREEN, "Successfully ", verb, " ", String.valueOf(shop.item.getCount), " of ",
-                    TextColors.YELLOW, itemName, TextColors.GREEN, " for ", String.valueOf(shop.price), " KST."
+                    TextColors.YELLOW, itemName, TextColors.GREEN, " for ", String.valueOf(shop.getPrice), " KST."
                   )
                 )
 

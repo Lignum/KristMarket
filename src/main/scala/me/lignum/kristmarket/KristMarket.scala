@@ -5,7 +5,7 @@ import java.nio.file.Path
 import java.util.concurrent.TimeUnit
 
 import com.google.inject.Inject
-import me.lignum.kristmarket.commands.CreateShop
+import me.lignum.kristmarket.commands.{CreateShop, SetShopItem}
 import me.lignum.kristmarket.events.BlockListener
 import org.slf4j.Logger
 import org.spongepowered.api.Sponge
@@ -44,12 +44,12 @@ class KristMarket {
     Sponge.getScheduler.createTaskBuilder
       .interval(config.updateInterval, TimeUnit.SECONDS)
       .execute(_ => {
+        database.shopItems.foreach(item => item.updatePrice())
+
         var dbHasChanged = false
         val shopsToRemove = new ArrayBuffer[SignShop]
 
         database.signShops.foreach(shop => {
-          shop.updatePrice()
-
           val tentOpt = shop.location.getTileEntity
 
           if (tentOpt.isPresent) {
@@ -103,6 +103,7 @@ class KristMarket {
     database = new Database(dbFile)
 
     Sponge.getCommandManager.register(this, CreateShop.spec, "createshop")
+    Sponge.getCommandManager.register(this, SetShopItem.spec, "setshopitem")
 
     Sponge.getEventManager.registerListeners(this, new BlockListener)
     startPriceUpdateSchedule()
