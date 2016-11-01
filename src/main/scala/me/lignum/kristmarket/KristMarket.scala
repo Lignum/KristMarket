@@ -13,8 +13,9 @@ import org.spongepowered.api.block.BlockTypes
 import org.spongepowered.api.block.tileentity.{Sign, TileEntityTypes}
 import org.spongepowered.api.config.ConfigDir
 import org.spongepowered.api.event.Listener
-import org.spongepowered.api.event.game.state.{GameStartedServerEvent, GameStoppingServerEvent}
+import org.spongepowered.api.event.game.state.{GamePostInitializationEvent, GameStartedServerEvent, GameStoppingServerEvent}
 import org.spongepowered.api.plugin.Plugin
+import org.spongepowered.api.service.economy.EconomyService
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -31,6 +32,8 @@ class KristMarket {
 
   var config: Configuration = _
   var database: Database = _
+
+  var economy: EconomyService = _
 
   KristMarket.instance = this
 
@@ -78,6 +81,17 @@ class KristMarket {
         }
       })
       .submit(this)
+  }
+
+  @Listener
+  def onPostInit(even: GamePostInitializationEvent): Unit = {
+    val economyOpt = Sponge.getServiceManager.provide(classOf[EconomyService])
+
+    if (!economyOpt.isPresent) {
+      KristMarket.get.logger.error("Couldn't find an economy service!! Please install an economy plugin.")
+    } else {
+      economy = economyOpt.get
+    }
   }
 
   @Listener

@@ -1,12 +1,17 @@
 package me.lignum.kristmarket.events
 
+import java.util.Locale
+
 import me.lignum.kristmarket.KristMarket
+import me.lignum.kristmarket.SignShop.ActionResult
 import org.spongepowered.api.block.BlockTypes
 import org.spongepowered.api.entity.living.player.Player
 import org.spongepowered.api.event.Listener
 import org.spongepowered.api.event.block.ChangeBlockEvent
 import org.spongepowered.api.event.block.InteractBlockEvent
 import org.spongepowered.api.event.filter.cause.First
+import org.spongepowered.api.text.Text
+import org.spongepowered.api.text.format.TextColors
 
 class BlockListener {
   @Listener
@@ -52,12 +57,27 @@ class BlockListener {
 
         db.getSignShopAt(l) match {
           case Some(shop) =>
-            if (shop.isBuyShop) {
+            val result = if (shop.isBuyShop) {
               shop.buy(player)
             } else {
-              //shop.sell(player)
+              shop.sell(player)
             }
 
+            result match {
+              case ActionResult.SUCCESS =>
+                val verb = if (shop.isBuyShop) "bought" else "sold"
+                val itemName = shop.item.getType.getTranslation.get(Locale.UK)
+
+                player.sendMessage(
+                  Text.of(
+                    TextColors.GREEN, "Successfully ", verb, " ", String.valueOf(shop.item.getCount), " of ",
+                    TextColors.YELLOW, itemName, TextColors.GREEN, " for ", String.valueOf(shop.price), " KST."
+                  )
+                )
+
+              case _ =>
+                player.sendMessage(result.getMessage)
+            }
           case None =>
         }
       }
