@@ -1,65 +1,52 @@
 package me.lignum.kristmarket
 
-import java.io.{File, PrintWriter}
-import java.util.Scanner
+import java.io.File
+import java.util.UUID
 
-import org.json.{JSONArray, JSONObject}
+import com.google.common.reflect.TypeToken
+import ninja.leaping.configurate.ConfigurationNode
+import ninja.leaping.configurate.hocon.HoconConfigurationLoader
 import org.spongepowered.api.world.{Location, World}
 
 import scala.collection.mutable.ArrayBuffer
 
 class Database(dbFile: File) {
-  if (!dbFile.exists()) {
-    dbFile.createNewFile()
+  val loader = HoconConfigurationLoader.builder()
+    .setFile(dbFile)
+    .build()
 
-    val json = new JSONObject
-    json.put("shops", new JSONArray)
-
-    val pw = new PrintWriter(dbFile)
-    pw.println(json.toString(4))
-    pw.close()
-  }
+  var rootNode: ConfigurationNode = _
 
   val signShops = new ArrayBuffer[SignShop]()
 
   def load(): Unit = {
-    val scanner = new Scanner(dbFile)
-    var contents = ""
+    if (loader.canLoad) {
+      rootNode = loader.load()
 
-    while (scanner.hasNextLine) {
-      contents += scanner.nextLine()
-    }
-
-    scanner.close()
-
-    val json = new JSONObject(contents)
-    val shopsArray = json.optJSONArray("shops")
-
-    shopsArray match {
-      case shops: JSONArray =>
-        for (i <- 0 until shops.length) {
-          val shop = shops.optJSONObject(i)
-
-          if (shop != null) {
-            signShops += SignShop.fromJSON(shop)
-          }
+      rootNode.getNode("shops").getChildrenMap.forEach((k, v) => {
+        if (rootNode.getNode("shops", String.valueOf(k), "location") != null) {
+          signShops += v.getValue(TypeToken.of(classOf[SignShop]), new SignShop)
         }
-
-      case _ =>
+      })
+    } else {
+      KristMarket.get.logger.error("Can't load KristMarket database!!")
     }
   }
 
   def save(): Unit = {
-    val json = new JSONObject
-    val shopsArray = new JSONArray
+    if (loader.canSave) {
+      rootNode.getNode("shops").getChildrenMap.keySet().forEach(key => {
+        rootNode.getNode("shops").removeChild(key)
+      })
 
-    signShops.foreach(shop => shopsArray.put(shop.toJSON))
+      signShops.foreach(shop => {
+        rootNode.getNode("shops", UUID.randomUUID()).setValue(TypeToken.of(classOf[SignShop]), shop)
+      })
 
-    json.put("shops", shopsArray)
-
-    val pw = new PrintWriter(dbFile)
-    pw.println(json.toString(4))
-    pw.close()
+      loader.save(rootNode)
+    } else {
+      KristMarket.get.logger.error("Can't save KristMarket database!")
+    }
   }
 
   def getSignShopAt(loc: Location[World]) = signShops.find(_.location.equals(loc))

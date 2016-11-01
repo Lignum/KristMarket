@@ -13,7 +13,7 @@ import org.spongepowered.api.block.BlockTypes
 import org.spongepowered.api.block.tileentity.{Sign, TileEntityTypes}
 import org.spongepowered.api.config.ConfigDir
 import org.spongepowered.api.event.Listener
-import org.spongepowered.api.event.game.state.GameStartedServerEvent
+import org.spongepowered.api.event.game.state.{GameStartedServerEvent, GameStoppingServerEvent}
 import org.spongepowered.api.plugin.Plugin
 
 import scala.collection.mutable.ArrayBuffer
@@ -92,6 +92,11 @@ class KristMarket {
 
     Sponge.getEventManager.registerListeners(this, new BlockListener)
     startPriceUpdateSchedule()
+  }
+
+  @Listener
+  def onServerStop(event: GameStoppingServerEvent): Unit = {
+    database.save()
   }
 }
 
