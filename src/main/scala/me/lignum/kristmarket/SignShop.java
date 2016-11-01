@@ -2,16 +2,17 @@ package me.lignum.kristmarket;
 
 import ninja.leaping.configurate.objectmapping.Setting;
 import ninja.leaping.configurate.objectmapping.serialize.ConfigSerializable;
-import org.json.JSONObject;
-import org.spongepowered.api.Sponge;
-import org.spongepowered.api.block.BlockType;
+
 import org.spongepowered.api.block.tileentity.Sign;
 import org.spongepowered.api.data.manipulator.mutable.tileentity.SignData;
+import org.spongepowered.api.entity.living.Human;
 import org.spongepowered.api.entity.living.player.Player;
-import org.spongepowered.api.item.ItemType;
-import org.spongepowered.api.item.ItemTypes;
+import org.spongepowered.api.item.inventory.Inventory;
 import org.spongepowered.api.item.inventory.ItemStack;
 import org.spongepowered.api.item.inventory.ItemStackSnapshot;
+import org.spongepowered.api.item.inventory.entity.Hotbar;
+import org.spongepowered.api.item.inventory.transaction.InventoryTransactionResult;
+import org.spongepowered.api.item.inventory.type.GridInventory;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.format.TextColors;
 import org.spongepowered.api.world.Location;
@@ -83,7 +84,11 @@ public class SignShop {
 				);
 	}
 
-	public void buy(Player player) {
-		
+	public boolean buy(Player player) {
+		Inventory inv = player.getInventory().query(Hotbar.class, GridInventory.class);
+		InventoryTransactionResult result = inv.offer(item.createStack());
+		return result.getType() == InventoryTransactionResult.Type.SUCCESS;
 	}
+
+
 }
