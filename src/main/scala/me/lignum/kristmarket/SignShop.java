@@ -84,7 +84,7 @@ public class SignShop {
 			int price = priceOpt.get() * quantity;
 
 			if (isBuyShop) {
-				return Math.max(1, price);
+				return Math.max(Math.max(1, quantity), price);
 			} else {
 				return Math.max(0, price / 2);
 			}
