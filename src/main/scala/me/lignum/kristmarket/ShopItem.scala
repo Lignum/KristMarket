@@ -1,19 +1,20 @@
 package me.lignum.kristmarket
 
-import ninja.leaping.configurate.objectmapping.Setting
-import ninja.leaping.configurate.objectmapping.serialize.ConfigSerializable
-import org.spongepowered.api.item.ItemType
 import java.util.Calendar
 
+import ninja.leaping.configurate.objectmapping.Setting
+import ninja.leaping.configurate.objectmapping.serialize.ConfigSerializable
+import org.spongepowered.api.item.inventory.ItemStack
+
 @ConfigSerializable class ShopItem {
-  @Setting var itemType: ItemType = null
+  @Setting var itemType: ItemStack = _
   @Setting var initialBase: Int = 0
   @Setting var demand: Int = 0
   @Setting var halveningConstant: Int = 0
 
   var price: Int = 0
 
-  def this(`type`: ItemType, initialBase: Int, demand: Int, halveningConstant: Int) {
+  def this(`type`: ItemStack, initialBase: Int, demand: Int, halveningConstant: Int) {
     this()
     this.itemType = `type`
     this.initialBase = initialBase

@@ -41,10 +41,10 @@ class SetShopItem extends CommandExecutor {
 
       if (handItemOpt.isPresent) {
         val handItem = handItemOpt.get
+        handItem.setQuantity(1)
 
-        KristMarket.get.database.getShopItem(handItem.getItem) match {
+        KristMarket.get.database.getShopItem(handItem) match {
           case Some(shopItem) =>
-            shopItem.itemType = handItem.getItem
             shopItem.initialBase = base
             shopItem.demand = demand
             shopItem.halveningConstant = halveningConstant
@@ -53,7 +53,7 @@ class SetShopItem extends CommandExecutor {
             src.sendMessage(Text.of(TextColors.GREEN, "Successfully updated the item's shop entry!"))
 
           case None =>
-            val shopItem = new ShopItem(handItem.getItem, base, demand, halveningConstant)
+            val shopItem = new ShopItem(handItem, base, demand, halveningConstant)
             KristMarket.get.database.registerShopItem(shopItem)
 
             KristMarket.get.database.save()

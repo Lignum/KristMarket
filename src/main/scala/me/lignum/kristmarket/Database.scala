@@ -6,7 +6,7 @@ import java.util.{Optional, UUID}
 import com.google.common.reflect.TypeToken
 import ninja.leaping.configurate.ConfigurationNode
 import ninja.leaping.configurate.hocon.HoconConfigurationLoader
-import org.spongepowered.api.item.ItemType
+import org.spongepowered.api.item.inventory.ItemStack
 import org.spongepowered.api.world.{Location, World}
 
 import scala.collection.mutable.ArrayBuffer
@@ -68,15 +68,14 @@ class Database(dbFile: File) {
     }
   }
 
-  def getItemPrice(itemType: ItemType): Optional[Integer] = getShopItem(itemType) match {
+  def getItemPrice(itemType: ItemStack): Optional[Integer] = getShopItem(itemType) match {
     case Some(it) => Optional.of(it.price)
     case None => Optional.empty()
   }
 
+  def getShopItem(itemType: ItemStack) = shopItems.find(_.itemType.equalTo(itemType))
 
-  def getShopItem(itemType: ItemType) = shopItems.find(_.itemType == itemType)
-
-  def getShopItemOpt(itemType: ItemType) = shopItems.find(_.itemType == itemType) match {
+  def getShopItemOpt(itemType: ItemStack) = getShopItem(itemType) match {
     case Some(it) => Optional.of(it)
     case None => Optional.empty()
   }

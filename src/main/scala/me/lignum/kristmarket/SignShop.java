@@ -56,7 +56,10 @@ public class SignShop {
 	public Location<World> location;
 
 	@Setting
-	public ItemStackSnapshot item;
+	public ItemStack item;
+
+	@Setting
+	public int quantity;
 
 	@Setting
 	public boolean isBuyShop;
@@ -65,19 +68,20 @@ public class SignShop {
 
 	}
 
-	public SignShop(Location<World> location, ItemStackSnapshot item, boolean isBuyShop) {
+	public SignShop(Location<World> location, ItemStack item, int quantity, boolean isBuyShop) {
 		this.location = location;
 		this.item = item;
 		this.isBuyShop = isBuyShop;
+		this.quantity = quantity;
 	}
 
 	public int getPrice() {
-		Optional<Integer> priceOpt = getDatabase().getItemPrice(item.getType());
+		Optional<Integer> priceOpt = getDatabase().getItemPrice(item);
 
 		if (!priceOpt.isPresent()) {
 			return -1;
 		} else {
-			int price = priceOpt.get() * item.getCount();
+			int price = priceOpt.get() * quantity;
 
 			if (isBuyShop) {
 				return Math.max(1, price);
@@ -90,12 +94,12 @@ public class SignShop {
 	public void setSignText(Sign sign) {
 		String heading = "[" + (isBuyShop ? "Buy" : "Sell") + "]";
 
-		String itemName = item.getType().getTranslation().get(Locale.UK);
+		String itemName = item.getTranslation().get(Locale.UK);
 		Optional<SignData> signDataOpt = sign.getOrCreate(SignData.class);
 
 		signDataOpt.ifPresent(sd -> {
 			sd.setElement(0, Text.builder(heading).color(TextColors.BLUE).build());
-			sd.setElement(1, Text.of(item.getCount() + "x"));
+			sd.setElement(1, Text.of(quantity + "x"));
 			sd.setElement(2, Text.builder(itemName).color(TextColors.DARK_GREEN).build());
 			sd.setElement(3, Text.of("for " + getPrice() + " KST"));
 
@@ -144,7 +148,10 @@ public class SignShop {
 		}
 
 		Inventory inv = player.getInventory().query(Hotbar.class, GridInventory.class);
-		InventoryTransactionResult invResult = inv.offer(item.createStack());
+
+		ItemStack stackToGive = item.copy();
+		stackToGive.setQuantity(quantity);
+		InventoryTransactionResult invResult = inv.offer(stackToGive);
 
 		if (invResult.getType() != InventoryTransactionResult.Type.SUCCESS) {
 			// Refund
@@ -155,8 +162,8 @@ public class SignShop {
 			return ActionResult.NO_INVENTORY_SPACE;
 		}
 
-		Optional<? extends ShopItem> shopItem = getDatabase().getShopItemOpt(item.getType());
-		shopItem.ifPresent(it -> it.demand_$eq(it.demand() + item.getCount()));
+		Optional<? extends ShopItem> shopItem = getDatabase().getShopItemOpt(item);
+		shopItem.ifPresent(it -> it.demand_$eq(it.demand() + quantity));
 
 		getDatabase().save();
 		return ActionResult.SUCCESS;
@@ -177,11 +184,14 @@ public class SignShop {
 
 		ItemStack stack = itemOpt.get();
 
-		if (stack.getItem() != item.getType()) {
+		ItemStack compareStack = item.copy();
+		compareStack.setQuantity(stack.getQuantity());
+
+		if (!stack.equalTo(compareStack)) {
 			return ActionResult.WRONG_ITEM;
 		}
 
-		if (stack.getQuantity() < item.getCount()) {
+		if (stack.getQuantity() < quantity) {
 			return ActionResult.NOT_ENOUGH_ITEMS;
 		}
 
@@ -203,12 +213,12 @@ public class SignShop {
 			return ActionResult.TRANSACTION_FAILED;
 		}
 
-		int newQuantity = stack.getQuantity() - item.getCount();
+		int newQuantity = stack.getQuantity() - quantity;
 		stack.setQuantity(newQuantity);
 		player.setItemInHand(stack.getQuantity() <= 0 ? null : stack);
 
-		Optional<? extends ShopItem> shopItem = getDatabase().getShopItemOpt(item.getType());
-		shopItem.ifPresent(it -> it.demand_$eq(it.demand() - item.getCount()));
+		Optional<? extends ShopItem> shopItem = getDatabase().getShopItemOpt(item);
+		shopItem.ifPresent(it -> it.demand_$eq(it.demand() - quantity));
 
 		getDatabase().save();
 		return ActionResult.SUCCESS;

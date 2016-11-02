@@ -66,11 +66,11 @@ class BlockListener {
             result match {
               case ActionResult.SUCCESS =>
                 val verb = if (shop.isBuyShop) "bought" else "sold"
-                val itemName = shop.item.getType.getTranslation.get(Locale.UK)
+                val itemName = shop.item.getTranslation.get(Locale.UK)
 
                 player.sendMessage(
                   Text.of(
-                    TextColors.GREEN, "Successfully ", verb, " ", String.valueOf(shop.item.getCount), " of ",
+                    TextColors.GREEN, "Successfully ", verb, " ", String.valueOf(shop.quantity), " of ",
                     TextColors.YELLOW, itemName, TextColors.GREEN, " for ", String.valueOf(shop.getPrice), " KST."
                   )
                 )

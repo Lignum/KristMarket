@@ -37,8 +37,9 @@ class UpdateShopItem extends CommandExecutor {
 
       if (handItemOpt.isPresent) {
         val handItem = handItemOpt.get
+        handItem.setQuantity(1)
 
-        KristMarket.get.database.getShopItem(handItem.getItem) match {
+        KristMarket.get.database.getShopItem(handItem) match {
           case Some(shopItem) =>
             propertyOpt.get match {
               case UpdateShopProperty.BASE                => shopItem.initialBase = value

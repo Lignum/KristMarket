@@ -45,8 +45,10 @@ class CreateShop extends CommandExecutor {
 
       if (itemStackOpt.isPresent) {
         val itemStack = itemStackOpt.get
+        val quantity = itemStack.getQuantity
+        itemStack.setQuantity(1)
 
-        KristMarket.get.database.getShopItem(itemStack.getItem) match {
+        KristMarket.get.database.getShopItem(itemStack) match {
           case Some(is) =>
           case None =>
             src.sendMessage(Text.of(TextColors.RED, "Please register this item with /setshopitem!"))
@@ -73,13 +75,12 @@ class CreateShop extends CommandExecutor {
 
               if (tent.getType == TileEntityTypes.SIGN) {
                 val sign = tent.asInstanceOf[Sign]
-
-                val shop = new SignShop(location, itemStack.createSnapshot, shopType == ShopType.BUY)
+                val shop = new SignShop(location, itemStack, quantity, shopType == ShopType.BUY)
 
                 KristMarket.get.database.addSignShop(shop) match {
                   case Some(s) =>
                     val action = if (s.isBuyShop) "selling" else "buying"
-                    val itemName = s.item.getType.getName
+                    val itemName = s.item.getItem.getName
 
                     src.sendMessage(
                       Text.builder(
