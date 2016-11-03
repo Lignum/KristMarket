@@ -29,7 +29,7 @@ import org.spongepowered.api.item.inventory.ItemStack
     val minutes = calendar.get(Calendar.MINUTE)
     val time = minutes / 60.0
 
-    price = Math.floor(initialBase.toDouble * Math.pow(2.0, demand / halveningConstant.toDouble) + 10.0 * Math.sin(2.0 * Math.PI * time)).toInt
+    price = Math.floor(initialBase.toDouble * Math.pow(2.0, demand / halveningConstant.toDouble)).toInt
   }
 
   updatePrice()
