@@ -2,15 +2,14 @@ package me.lignum.kristmarket;
 
 import ninja.leaping.configurate.objectmapping.Setting;
 import ninja.leaping.configurate.objectmapping.serialize.ConfigSerializable;
-
 import org.spongepowered.api.block.tileentity.Sign;
 import org.spongepowered.api.data.manipulator.mutable.tileentity.SignData;
+import org.spongepowered.api.data.type.HandTypes;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.event.cause.Cause;
 import org.spongepowered.api.event.cause.NamedCause;
 import org.spongepowered.api.item.inventory.Inventory;
 import org.spongepowered.api.item.inventory.ItemStack;
-import org.spongepowered.api.item.inventory.ItemStackSnapshot;
 import org.spongepowered.api.item.inventory.entity.Hotbar;
 import org.spongepowered.api.item.inventory.transaction.InventoryTransactionResult;
 import org.spongepowered.api.item.inventory.type.GridInventory;
@@ -86,7 +85,7 @@ public class SignShop {
 			if (isBuyShop) {
 				return Math.max(Math.max(1, quantity), price);
 			} else {
-				return Math.max(0, price / 2);
+				return Math.max(0, price / 4);
 			}
 		}
 	}
@@ -176,7 +175,7 @@ public class SignShop {
 			return ActionResult.ITEM_HAS_NO_PRICE;
 		}
 
-		Optional<ItemStack> itemOpt = player.getItemInHand();
+		Optional<ItemStack> itemOpt = player.getItemInHand(HandTypes.MAIN_HAND);
 
 		if (!itemOpt.isPresent()) {
 			return ActionResult.NO_ITEM_IN_HAND;
@@ -215,7 +214,7 @@ public class SignShop {
 
 		int newQuantity = stack.getQuantity() - quantity;
 		stack.setQuantity(newQuantity);
-		player.setItemInHand(stack.getQuantity() <= 0 ? null : stack);
+		player.setItemInHand(HandTypes.MAIN_HAND, stack.getQuantity() <= 0 ? null : stack);
 
 		Optional<? extends ShopItem> shopItem = getDatabase().getShopItemOpt(item);
 		shopItem.ifPresent(it -> it.demand_$eq(it.demand() - quantity));

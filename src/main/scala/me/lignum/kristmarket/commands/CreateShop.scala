@@ -7,6 +7,7 @@ import org.spongepowered.api.command.args.CommandContext
 import org.spongepowered.api.command.args.GenericArguments._
 import org.spongepowered.api.command.spec.{CommandExecutor, CommandSpec}
 import org.spongepowered.api.command.{CommandResult, CommandSource}
+import org.spongepowered.api.data.`type`.HandTypes
 import org.spongepowered.api.entity.living.player.Player
 import org.spongepowered.api.text.Text
 import org.spongepowered.api.text.format.TextColors
@@ -41,7 +42,7 @@ class CreateShop extends CommandExecutor {
 
       val shopType = shopTypeOpt.get
 
-      val itemStackOpt = player.getItemInHand
+      val itemStackOpt = player.getItemInHand(HandTypes.MAIN_HAND)
 
       if (itemStackOpt.isPresent) {
         val itemStack = itemStackOpt.get
@@ -56,7 +57,7 @@ class CreateShop extends CommandExecutor {
         }
 
         val ray: BlockRay[World] = BlockRay.from(player)
-          .filter(BlockRay.continueAfterFilter[World](BlockRay.onlyAirFilter(), 1))
+          .skipFilter(BlockRay.blockTypeFilter[World](BlockTypes.AIR))
           .build()
 
         val hitOpt = ray.end()

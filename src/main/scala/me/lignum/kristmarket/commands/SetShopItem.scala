@@ -5,6 +5,7 @@ import org.spongepowered.api.command.{CommandResult, CommandSource}
 import org.spongepowered.api.command.args.CommandContext
 import org.spongepowered.api.command.args.GenericArguments._
 import org.spongepowered.api.command.spec.{CommandExecutor, CommandSpec}
+import org.spongepowered.api.data.`type`.HandTypes
 import org.spongepowered.api.entity.living.player.Player
 import org.spongepowered.api.text.Text
 import org.spongepowered.api.text.format.TextColors
@@ -37,7 +38,7 @@ class SetShopItem extends CommandExecutor {
       val demand = demandOpt.get
       val halveningConstant = halveningConstantOpt.get
 
-      val handItemOpt = player.getItemInHand
+      val handItemOpt = player.getItemInHand(HandTypes.MAIN_HAND)
 
       if (handItemOpt.isPresent) {
         val handItem = handItemOpt.get
