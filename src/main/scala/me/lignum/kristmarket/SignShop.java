@@ -2,7 +2,6 @@ package me.lignum.kristmarket;
 
 import ninja.leaping.configurate.objectmapping.Setting;
 import ninja.leaping.configurate.objectmapping.serialize.ConfigSerializable;
-
 import org.spongepowered.api.block.tileentity.Sign;
 import org.spongepowered.api.data.manipulator.mutable.tileentity.SignData;
 import org.spongepowered.api.entity.living.player.Player;
@@ -10,7 +9,6 @@ import org.spongepowered.api.event.cause.Cause;
 import org.spongepowered.api.event.cause.NamedCause;
 import org.spongepowered.api.item.inventory.Inventory;
 import org.spongepowered.api.item.inventory.ItemStack;
-import org.spongepowered.api.item.inventory.ItemStackSnapshot;
 import org.spongepowered.api.item.inventory.entity.Hotbar;
 import org.spongepowered.api.item.inventory.transaction.InventoryTransactionResult;
 import org.spongepowered.api.item.inventory.type.GridInventory;
@@ -39,7 +37,8 @@ public class SignShop {
 		NO_ITEM_IN_HAND(Text.of(TextColors.RED, "You're not holding an item in your hand!")),
 		NOT_ENOUGH_ITEMS(Text.of(TextColors.RED, "You're not holding enough of the required item!")),
 		WRONG_ITEM(Text.of(TextColors.RED, "You're holding the wrong item!")),
-		ITEM_HAS_NO_PRICE(Text.of(TextColors.RED, "Item has no price!! Report this to an admin."));
+		ITEM_HAS_NO_PRICE(Text.of(TextColors.RED, "Item has no price!! Report this to an admin.")),
+		RATE_LIMITED(Text.of(TextColors.RED, "Whoa! Slow down there."));
 
 		private final Text message;
 
@@ -115,7 +114,19 @@ public class SignShop {
 		return KristMarket$.MODULE$.get().database();
 	}
 
+	private static Configuration getConfig() {
+		return KristMarket$.MODULE$.get().config();
+	}
+
+	private static RateLimit$ getRateLimit() {
+		return RateLimit$.MODULE$;
+	}
+
 	public ActionResult buy(Player player) {
+		if (!getRateLimit().shouldAllowBuy(player)) {
+			return ActionResult.RATE_LIMITED;
+		}
+
 		int price = getPrice();
 
 		if (price < 0) {
@@ -165,11 +176,16 @@ public class SignShop {
 		Optional<? extends ShopItem> shopItem = getDatabase().getShopItemOpt(item);
 		shopItem.ifPresent(it -> it.demand_$eq(it.demand() + quantity));
 
+		getRateLimit().addBuy(player);
 		getDatabase().save();
 		return ActionResult.SUCCESS;
 	}
 
 	public ActionResult sell(Player player) {
+		if (!getRateLimit().shouldAllowSales(player)) {
+			return ActionResult.RATE_LIMITED;
+		}
+
 		int price = getPrice();
 
 		if (price < 0) {
@@ -220,6 +236,7 @@ public class SignShop {
 		Optional<? extends ShopItem> shopItem = getDatabase().getShopItemOpt(item);
 		shopItem.ifPresent(it -> it.demand_$eq(it.demand() - quantity));
 
+		getRateLimit().addSale(player);
 		getDatabase().save();
 		return ActionResult.SUCCESS;
 	}
