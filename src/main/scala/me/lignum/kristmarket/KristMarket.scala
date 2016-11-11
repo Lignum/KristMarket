@@ -2,6 +2,7 @@ package me.lignum.kristmarket
 
 import java.io.File
 import java.nio.file.Path
+import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 import com.google.inject.Inject
@@ -17,6 +18,7 @@ import org.spongepowered.api.event.game.state.{GamePostInitializationEvent, Game
 import org.spongepowered.api.plugin.Plugin
 import org.spongepowered.api.service.economy.EconomyService
 
+import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 @Plugin(id = "kristmarket", name = "KristMarket", version = "1.0")
@@ -34,6 +36,10 @@ class KristMarket {
   var database: Database = _
 
   var economy: EconomyService = _
+
+  // Used for rate limiting
+  var recentBuys = new mutable.HashMap[UUID, (Int, Long, Boolean)]()
+  var recentSales = new mutable.HashMap[UUID, (Int, Long, Boolean)]()
 
   KristMarket.instance = this
 
